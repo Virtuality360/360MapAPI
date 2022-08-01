@@ -4,5 +4,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def establish_connection():
-    conn = psycopg.connect('')
+    """Return the connection to the server"""
+    conn = psycopg.connect()
     return conn

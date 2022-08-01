@@ -1,4 +1,3 @@
-from urllib import response
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -46,8 +45,20 @@ async def get_features(north: float, south: float, east: float, west: float,
 
     geoJSON = toGeoJSON(response)
 
-    return {"response": geoJSON}
+    return {"query": query,
+            "response": geoJSON}
 
-@api.get("get_features/{geohash}")
+@api.get("/get_features/{geohash}")
 async def get_features(geohash: str):
     return {"message": "Not implemented yet"}
+
+@api.get("/download/")
+async def downloadDB():
+    sql = "COPY public.gsm_qp TO STDOUT WITH CSV HEADER"
+
+    with conn.cursor() as cur:
+        with cur.copy(sql) as copy:
+            with open("export.csv", "wb") as f:
+                while data := copy.read():
+                    f.write(data)
+    return {"Status": "Comleted"}

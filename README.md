@@ -5,8 +5,8 @@ Run `uvicorn src.api:api`
 # To Run in a container
 Set up dotenv file\
 From the root folder:\
-Run `docker build -t {image-name} .`\
-Run `docker run -d --name {container-name} -p 80:80 {image-name}`
+Run `docker-compose build`\
+Run `docker-compose up`
 Requests can then be made to localhost
 View documentation at localhost:80/docs
 

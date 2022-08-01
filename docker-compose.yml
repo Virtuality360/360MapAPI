@@ -1,0 +1,7 @@
+version: "3.9"
+services:
+  v360api:
+    build: .
+    command: python3 server.py
+    ports:
+      - "8888:8888"
