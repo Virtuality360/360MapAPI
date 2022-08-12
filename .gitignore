@@ -3,3 +3,9 @@
 
 # Enviroment Variables
 **/.env
+
+# Data dumps
+data/*
+
+# Misc
+.DS_Store

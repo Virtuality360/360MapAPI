@@ -5,7 +5,8 @@ def main() -> None:
     uvicorn.run(
         "src.api:api",
         host='0.0.0.0',
-        port=8888,
+        port=8882,
+        reload=True
     )
 
 if __name__ == "__main__":

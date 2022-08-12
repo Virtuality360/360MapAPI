@@ -1,32 +1,33 @@
-# TODO
-# Might be wonky when viewing the prime meridian
-def create_query(**kwargs):
-    '''
-    Generate a SQL query string
-    north, south, east, and west are all required
-    they are used to bound the results
-    mcc, mnc, lac, and cid are optional
-    they must be passed in an array
-    '''
-    COLS = "longitude, latitude, mcc, mnc, lac, cid"
-    BASE = f"SELECT DISTINCT {COLS} FROM public.gsm_qp "
-    WHERE = "WHERE "
-    LOCATION = f"(latitude BETWEEN {kwargs['south']} AND {kwargs['north']}) AND (longitude BETWEEN {kwargs['west']} AND {kwargs['east']}) "
-    filter = ""
-    for key in kwargs.keys():
-        # Skip the coordinates
-        if key in ['north', 'south', 'east', 'west']:
+def create_query(type: str, table: str, **kwargs) -> str:
+    match type:
+        case "count":
+            type = "COUNT(*)"
+        case "filters":
+            type = f'DISTINCT {kwargs["column"]}'
+        case "geoJSON":
+            type = "longitude, latitude, mcc, mnc, lac, cid"
+        case _:
+            type = "*"
+    
+    query: str = f'SELECT {type} from public.{table}'
+    filters: list = []
+    filter_values = []
+    for k, v in kwargs.items():
+        if( v in [None] or k in ["column"]):
             continue
-        for val in key:
-            # go from array of values to array of equations
-            # [1,2,3] ==> ['mcc=1','mcc=2','mcc=3']
-            # then join the values with an OR
-            formated = list(map(lambda x: f"{key}={x}",val))
-            formated = " OR ".join(formated)
+        elif ( k == "bounds"):
+            if v["west"] != None:
+                filters.append(f'(longitude BETWEEN {v["west"]} AND {v["east"]}) AND (latitude BETWEEN {v["south"]} AND {v["north"]})')
+            continue
+        else:
+            filters.append( f'({" OR ".join( map(lambda x: f"{k}=%s", v) )})' )
+            filter_values.extend(v)
 
-            filter = f"{filter}AND {formated} "
-
-    LIMIT = "LIMIT 500"
-    QUERY = BASE + WHERE + LOCATION + filter + LIMIT
-    print(QUERY)
-    return QUERY
+    filter:str = ''
+    if len(filters) > 0:
+        filter:str = f' WHERE {" AND ".join(filters)}'
+    #TODO: Remove limit for production
+    query = query + filter + " LIMIT 100"
+    query_fill: tuple = (query, tuple(filter_values))
+    print(query_fill)
+    return query_fill
