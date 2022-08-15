@@ -12,10 +12,11 @@ import dask.dataframe as dd
 from .database.connection import establish_connection
 from .database.create_query import create_query
 from .database.queryDB import queryDB
+import psycopg2
 
 from .geoJSON.toGeoJSON import toGeoJSON
 
-from .tiling.tiles import generate_tiles
+from .tiling.tiles import generate_tile
 
 api = FastAPI()
 
@@ -41,7 +42,10 @@ api.add_middleware(
 def startup_event():
     """On the startup of the api, instantiate the connection with the database."""
     global conn
-    conn = establish_connection()
+    try:
+        conn = establish_connection()
+    except psycopg2.OperationalError:
+        print("ERROR: Could not connect to the database server")
 
 @api.get("/")
 def root():
@@ -96,11 +100,11 @@ async def get_geoJSON(table:str, north: float = Query(None), south: float = Quer
     return {"query": query,
             "response": geoJSON}
 
-@api.get("/tiles/{table}/{zoom}/{x}/{y}")
-async def response_tiles(x, y, zoom, mcc=0, mnc=0, lac=0, cid=0):
+@api.get("/tiles/{table}/{zoom}/{x}/{y}.png")
+async def response_tiles(table, zoom, x, y, mcc=0, mnc=0, lac=0, cid=0):
     """
     Rasterize datapoints into a slippy map.
     TODO: filter based on already set values
     """
-    results = generate_tiles(x, y, zoom)
+    results = generate_tile(table, x, y, zoom, conn)
     return Response(content=results, media_type="image/png")

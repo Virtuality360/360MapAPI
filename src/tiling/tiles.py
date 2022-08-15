@@ -1,74 +1,71 @@
-import re
 import datashader as ds
+import pandas as pd
 import math
-import datetime
+
+from colorcet import bmw, coolwarm, fire, CET_L18
 from datashader import transfer_functions as tf
 from datashader.utils import lnglat_to_meters
-from colorcet import bmw, coolwarm, fire, CET_L18
 
-#from ..globals.dataframe import td
+from src.database.create_query import create_query
+from src.database.queryDB import queryDB
 
+def degree2num(lat_degree, long_degree, zoom):
+    """
+    Takes a coordinate and return what tile it belongs to.
+    https://wiki.openstreetmap.org/wiki/Tiles
+    """
+    lat_radians = math.radians(lat_degree)
+    n = 2 ** zoom
+    xtile = int((long_degree + 180.0) / 360.0 * n)
+    ytile = int((1.0 - math.asinh(math.tan(lat_radians)) / math.pi) / 2.0 * n)
+    return (xtile, ytile)
 
-# TODO : Optimization
-# Takes nearly 3 seconds to generate and serve a tile
-# Do some local testing for generation to seperate the time
-# it takes to create the tile to the time neeeded to serve it
-
-# Takes less than 0.0001 seconds
-def tile2mercator(xtile, ytile, zoom):
-    # takes the zoom and tile path and passes back the EPSG:3857
-    # coordinates of the top left of the tile.
-    # From Openstreetmap
+def num2degree(xtile, ytile, zoom):
+    """
+    Returns the NW-corner of the square.
+    Use the function with xtile+1 and/or ytile+1 to get the other corners.
+    With xtile+0.5 & ytile+0.5 it will return the center of the tile
+    https://wiki.openstreetmap.org/wiki/Tiles
+    """
     n = 2.0 ** zoom
-    lon_deg = xtile / n * 360.0 - 180.0
-    lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * ytile / n)))
-    lat_deg = math.degrees(lat_rad)
+    long_degree = xtile / n * 360.0 - 180.0
+    lat_radians = math.atan(math.sinh(math.pi * (1 - 2 * ytile / n)))
+    lat_degree = math.degrees(lat_radians)
+    return (lat_degree, long_degree)
 
-    # Convert the results of the degree calulation above and convert
-    # to meters for web map presentation
-    mercator = lnglat_to_meters(lon_deg, lat_deg)
-    return mercator
+def generate_tile(table, x, y, zoom, conn):
+    """
+    Generate a slippy map tile
+    """
+    # Get the northwest and southeast corners of the tile
+    north, west = num2degree(int(x), int(y), int(zoom))
+    south, east = num2degree(int(x)+1, int(y)+1, int(zoom))
 
+    # Query the database for all points within the tile
+    bounds = {"north":north,"south":south, "east":east, "west": west}
+    query = create_query("tiles", table, bounds=bounds)
+    response = queryDB(conn,query)
 
-def generate_tiles(x, y, zoom, ddf, mcc, mnc, lac, cid):
+    # Put the database response into a pandas dataframe
+    # Convert the projection to web-mercator
+    df = pd.DataFrame(response, columns=["longitude", "latitude"])
+    df["longitude"], df["latitude"] = lnglat_to_meters(df.longitude, df.latitude)
 
-    mccq = ""
-    mncq = ""
-    lacq = ""
-    cidq = ""
+    # Create a 256x256 canvas
+    west, north = lnglat_to_meters(west, north)
+    east, south = lnglat_to_meters(east, south)
+    csv = ds.Canvas(plot_width=256, plot_height=256, x_range=(min(west, east), max(west, east)),
+                    y_range=(min(north, south), max(north, south)))
 
-    if mcc != "0":
-        mccq = " & (mcc == {mcc})".format(mcc=str(mcc))
-    if mnc != "0":
-        mncq = " & (mnc == {mnc})".format(mnc=mnc)
-    if lac != "0":
-        lacq = " & (lac == {lac})".format(lac=lac)
-    if cid != "0":
-        cidq = " & (cid == {cid})".format(cid=cid)
+    # If there are no points in the tile return 
+    # Else create an aggregate of all the points
+    if(df.size == 0):
+        return          # Might want to change to returning an empty png instead of null
+    agg = csv.points(df, 'longitude', 'latitude')
 
-    # The function takes the zoom and tile path from the web request,
-    # and determines the top left and bottom right coordinates of the tile.
-    # This information is used to query against the dataframe.
-    xleft, yleft = tile2mercator(int(x), int(y), int(zoom)) # Northwest corner
-    xright, yright = tile2mercator(int(x)+1, int(y)+1, int(zoom)) # Southeast corner
-
-    #print(ddf.head())
-
-    condition = f'(X >= {xleft}) & (X <= {xright}) & (Y <= {yleft}) & (Y >= {yright}){mccq}{mncq}{lacq}{cidq}'
-    #print(condition)
-    frame = ddf.query(condition)
-    #print(ddf[ddf.mcc == "432"].head())
-    #print(len(frame.index))
-    # The dataframe query gets passed to Datashader to construct the graphic.
-    # First the graphic is created, then the dataframe is passed to the Datashader aggregator.
-
-    csv = ds.Canvas(plot_width=64, plot_height=64, x_range=(min(xleft, xright), max(
-        xleft, xright)), y_range=(min(yleft, yright), max(yleft, yright)))
-    agg = csv.points(frame, 'X', 'Y') # Takes a while
-
-    # The image is created from the aggregate object, a color map and aggregation function.
-    # Then the object is assighed to a bytestream and returned
+    # Create the rasterization from the aggregate, color it, and determine how it is displayed
     img = tf.shade(agg, cmap=CET_L18, how='log')
+    # Write the image to a byte stream to return
     img_io = img.to_bytesio('PNG')
     img_io.seek(0)
     bytes = img_io.read()

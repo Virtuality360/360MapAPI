@@ -6,6 +6,8 @@ def create_query(type: str, table: str, **kwargs) -> str:
             type = f'DISTINCT {kwargs["column"]}'
         case "geoJSON":
             type = "longitude, latitude, mcc, mnc, lac, cid"
+        case "tiles":
+            type = "longitude, latitude"
         case _:
             type = "*"
     
@@ -27,7 +29,7 @@ def create_query(type: str, table: str, **kwargs) -> str:
     if len(filters) > 0:
         filter:str = f' WHERE {" AND ".join(filters)}'
     #TODO: Remove limit for production
-    query = query + filter + " LIMIT 100"
+    query = query + filter #+ " LIMIT 100"
     query_fill: tuple = (query, tuple(filter_values))
     print(query_fill)
     return query_fill
