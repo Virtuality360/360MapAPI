@@ -1,31 +1,23 @@
 #TODO Error handling
 
-from cmath import isnan, nan
-from enum import unique
-import sys
-from os.path import exists
-from urllib import response
-import numpy as np
-from datashader.utils import lnglat_to_meters
-from fastapi import FastAPI, Response, Request, Query
-from typing import List
-from fastapi.middleware.cors import CORSMiddleware
-import dask.dataframe as dd
-from .database.connection import establish_connection
-from .database.create_query import create_query
-from .database.queryDB import queryDB
 import psycopg2
 
-from .geoJSON.toGeoJSON import toGeoJSON
+from fastapi import FastAPI, Response, Query
+from fastapi.middleware.cors import CORSMiddleware
+from typing import List
 
-from .tiling.tiles import generate_tile
+from src.database.create_query import create_query
+from src.database.connection import establish_connection
+from src.database.queryDB import queryDB
+from src.geoJSON.toGeoJSON import toGeoJSON
+from src.tiling.tiles import generate_tile
 
-api = FastAPI()
+api: FastAPI = FastAPI()
 
 # TODO
 # Formalize allowed resource requests
 # Don't push to production with wildcard
-origins = [
+origins: List = [
     "*"
 ]
 
@@ -50,7 +42,7 @@ def startup_event():
         print("ERROR: Could not connect to the database server")
 
 @api.get("/")
-def root():
+def root() -> dict:
     """Provide a page to inform the user about the documentation."""
     return {"message": "Hello World",
             "docs": "Visit ./docs or ./redoc to view automatically generated documentation."
@@ -62,7 +54,7 @@ async def get_count(table: str, north: float = Query(None), south: float = Query
                     mcc: List[str] = Query(None), mnc: List[str] = Query(None), 
                     lac: List[str] = Query(None), cid: List[str] = Query(None)) -> dict:
     """Return the number of points that match the query for the given table."""
-    bounds = {"north":north,"south":south, "east":east, "west": west}
+    bounds: dict = {"north":north,"south":south, "east":east, "west": west}
     query: str = create_query("count", table, mcc=mcc, mnc=mnc, lac=lac, cid=cid, bounds=bounds )
     result = queryDB(conn, query)
 
@@ -93,10 +85,10 @@ async def get_geoJSON(table:str, north: float = Query(None), south: float = Quer
     """
     Returns a geojson file describing various points
     """
-    bounds = {"north":north,"south":south, "east":east, "west": west}
+    bounds: dict = {"north":north,"south":south, "east":east, "west": west}
     query:str = create_query("geoJSON", table, mcc=mcc, mnc=mnc, lac=lac, cid=cid, bounds=bounds)
-    response = queryDB(conn,query)
-    geoJSON = toGeoJSON(response)
+    response: any = queryDB(conn,query)
+    geoJSON: dict = toGeoJSON(response)
     return {"query": query,
             "response": geoJSON}
 
@@ -108,5 +100,5 @@ async def response_tiles(table, zoom, x, y,
     Rasterize datapoints into a slippy map.
     TODO: filter based on already set values
     """
-    results = generate_tile(table, x, y, zoom, conn, mcc, mnc, lac, cid)
+    results: any = generate_tile(table, x, y, zoom, conn, mcc, mnc, lac, cid)
     return Response(content=results, media_type="image/png")

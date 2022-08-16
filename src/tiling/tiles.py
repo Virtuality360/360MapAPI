@@ -9,7 +9,7 @@ from datashader.utils import lnglat_to_meters
 from src.database.create_query import create_query
 from src.database.queryDB import queryDB
 
-def degree2num(lat_degree, long_degree, zoom):
+def degree2num(lat_degree, long_degree, zoom) -> tuple:
     """
     Takes a coordinate and return what tile it belongs to.
     https://wiki.openstreetmap.org/wiki/Tiles
@@ -20,7 +20,7 @@ def degree2num(lat_degree, long_degree, zoom):
     ytile = int((1.0 - math.asinh(math.tan(lat_radians)) / math.pi) / 2.0 * n)
     return (xtile, ytile)
 
-def num2degree(xtile, ytile, zoom):
+def num2degree(xtile, ytile, zoom) -> tuple:
     """
     Returns the NW-corner of the square.
     Use the function with xtile+1 and/or ytile+1 to get the other corners.
@@ -33,7 +33,7 @@ def num2degree(xtile, ytile, zoom):
     lat_degree = math.degrees(lat_radians)
     return (lat_degree, long_degree)
 
-def generate_tile(table, x, y, zoom, conn, mcc, mnc, lac, cid):
+def generate_tile(table, x, y, zoom, conn, mcc, mnc, lac, cid) -> bytearray:
     """
     Generate a slippy map tile
     """

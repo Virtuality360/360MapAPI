@@ -12,8 +12,10 @@ def create_query(type: str, table: str, **kwargs) -> str:
             type = "*"
     
     query: str = f'SELECT {type} from public.{table}'
+
     filters: list = []
-    filter_values = []
+    filter_values: list = []
+
     for k, v in kwargs.items():
         if( v in [None] or k in ["column"]):
             continue
@@ -28,6 +30,7 @@ def create_query(type: str, table: str, **kwargs) -> str:
     filter:str = ''
     if len(filters) > 0:
         filter:str = f' WHERE {" AND ".join(filters)}'
+        
     #TODO: Remove limit for production
     query = query + filter #+ " LIMIT 1000"
     query_fill: tuple = (query, tuple(filter_values))
