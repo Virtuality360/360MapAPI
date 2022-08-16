@@ -1,6 +1,6 @@
 #TODO Error handling
 
-import psycopg2
+import psycopg
 
 from fastapi import FastAPI, Response, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,7 +38,7 @@ def startup_event():
     global conn
     try:
         conn = establish_connection()
-    except psycopg2.OperationalError:
+    except psycopg.OperationalError:
         print("ERROR: Could not connect to the database server")
 
 @api.get("/")

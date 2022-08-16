@@ -1,4 +1,7 @@
+colorcet==3.0.0
+datashader==0.14.1
 fastapi==0.79.0
-uvicorn==0.18.2
-psycopg[binary]==3.0.15
+pandas==1.4.3
+psycopg==3.0.16
 python-dotenv==0.20.0
+uvicorn==0.18.2

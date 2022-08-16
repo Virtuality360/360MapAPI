@@ -4,4 +4,4 @@ services:
     build: .
     command: python3 server.py
     ports:
-      - "8888:8888"
+      - "8882:8882"
