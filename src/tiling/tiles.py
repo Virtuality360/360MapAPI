@@ -33,7 +33,7 @@ def num2degree(xtile, ytile, zoom):
     lat_degree = math.degrees(lat_radians)
     return (lat_degree, long_degree)
 
-def generate_tile(table, x, y, zoom, conn):
+def generate_tile(table, x, y, zoom, conn, mcc, mnc, lac, cid):
     """
     Generate a slippy map tile
     """
@@ -43,7 +43,7 @@ def generate_tile(table, x, y, zoom, conn):
 
     # Query the database for all points within the tile
     bounds = {"north":north,"south":south, "east":east, "west": west}
-    query = create_query("tiles", table, bounds=bounds)
+    query = create_query("tiles", table,  mcc=mcc, mnc=mnc, lac=lac, cid=cid, bounds=bounds)
     response = queryDB(conn,query)
 
     # Put the database response into a pandas dataframe

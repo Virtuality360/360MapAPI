@@ -1,3 +1,5 @@
+from src.utils.progressBar import progressBar
+
 def create_collection(): 
     """Returns an empty geoJSON Feature Collection"""
     geojson_feature_collection = {
@@ -30,7 +32,7 @@ def toGeoJSON(dataset):
     geoJSON feature collection
     """
     collection = create_collection()
-    for datapoint in dataset:
+    for datapoint in progressBar(dataset, prefix = 'Progress:', suffix = 'Complete', length = 50):
         feature = create_feature(datapoint)
         collection["features"].append(feature)
     return collection

@@ -1,3 +1,5 @@
+#TODO Error handling
+
 from cmath import isnan, nan
 from enum import unique
 import sys
@@ -74,11 +76,10 @@ async def get_filters(table: str,
     """
     Return the unique values in each column.
     Removes any null or empty values.
-    TODO: filter based on already set values
     """
     result: dict = {}
     for col in ["mcc", "mnc", "lac", "cid"]:
-        query = create_query("filters", table, column=col)
+        query = create_query("filters", table, mcc=mcc, mnc=mnc, lac=lac, cid=cid, column=col)
         result[col] = [item for sublist in queryDB(conn, query) for item in sublist if item not in [None, ""] ]
         result[col].sort()
 
@@ -91,7 +92,6 @@ async def get_geoJSON(table:str, north: float = Query(None), south: float = Quer
                     lac: List[str] = Query(None), cid: List[str] = Query(None)) -> dict:
     """
     Returns a geojson file describing various points
-    TODO: filter based on already set values
     """
     bounds = {"north":north,"south":south, "east":east, "west": west}
     query:str = create_query("geoJSON", table, mcc=mcc, mnc=mnc, lac=lac, cid=cid, bounds=bounds)
@@ -101,10 +101,12 @@ async def get_geoJSON(table:str, north: float = Query(None), south: float = Quer
             "response": geoJSON}
 
 @api.get("/tiles/{table}/{zoom}/{x}/{y}.png")
-async def response_tiles(table, zoom, x, y, mcc=0, mnc=0, lac=0, cid=0):
+async def response_tiles(table, zoom, x, y,
+                        mcc: List[str] = Query(None), mnc: List[str] = Query(None), 
+                        lac: List[str] = Query(None), cid: List[str] = Query(None)) -> dict:
     """
     Rasterize datapoints into a slippy map.
     TODO: filter based on already set values
     """
-    results = generate_tile(table, x, y, zoom, conn)
+    results = generate_tile(table, x, y, zoom, conn, mcc, mnc, lac, cid)
     return Response(content=results, media_type="image/png")
