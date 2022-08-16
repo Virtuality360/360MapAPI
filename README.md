@@ -2,6 +2,9 @@
 Set up the dotenv file\
 Run `uvicorn src.api:api`
 
+This project uses psycopg3
+As of this writing, binary packages are not available for M1 processors
+
 # To Run in a container
 Set up dotenv file\
 From the root folder:\
