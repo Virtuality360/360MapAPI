@@ -1,4 +1,6 @@
-def queryDB(conn, query) -> any:
-    with conn.cursor() as cur:
-        cur.execute(query[0], query[1])
-        return cur.fetchall()
+async def queryDB(pool, query) -> any:
+    async with pool.connection() as aconn:
+        async with aconn.cursor() as cur:
+            await cur.execute(query[0], query[1])
+            return await cur.fetchall()
+

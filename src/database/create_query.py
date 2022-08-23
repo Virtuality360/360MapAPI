@@ -32,7 +32,7 @@ def create_query(type: str, table: str, **kwargs) -> str:
         filter:str = f' WHERE {" AND ".join(filters)}'
         
     #TODO: Remove limit for production
-    query = query + filter #+ " LIMIT 1000"
+    query = query + filter #+ " LIMIT 500"
     query_fill: tuple = (query, tuple(filter_values))
     print(query_fill)
     return query_fill

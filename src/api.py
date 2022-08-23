@@ -35,9 +35,9 @@ api.add_middleware(
 @api.on_event("startup")
 def startup_event():
     """On the startup of the api, instantiate the connection with the database."""
-    global conn
+    global pool
     try:
-        conn = establish_connection()
+        pool = establish_connection()
     except psycopg.OperationalError:
         print("ERROR: Could not connect to the database server")
 
@@ -56,7 +56,7 @@ async def get_count(table: str, north: float = Query(None), south: float = Query
     """Return the number of points that match the query for the given table."""
     bounds: dict = {"north":north,"south":south, "east":east, "west": west}
     query: str = create_query("count", table, mcc=mcc, mnc=mnc, lac=lac, cid=cid, bounds=bounds )
-    result = queryDB(conn, query)
+    result = await queryDB(pool, query)
 
     return {"result": result,
             "query": query}
@@ -72,7 +72,7 @@ async def get_filters(table: str,
     result: dict = {}
     for col in ["mcc", "mnc", "lac", "cid"]:
         query = create_query("filters", table, mcc=mcc, mnc=mnc, lac=lac, cid=cid, column=col)
-        result[col] = [item for sublist in queryDB(conn, query) for item in sublist if item not in [None, ""] ]
+        result[col] = [item for sublist in await queryDB(pool, query) for item in sublist if item not in [None, ""] ]
         result[col].sort()
 
     return {"result": result}
@@ -87,7 +87,7 @@ async def get_geoJSON(table:str, north: float = Query(None), south: float = Quer
     """
     bounds: dict = {"north":north,"south":south, "east":east, "west": west}
     query:str = create_query("geoJSON", table, mcc=mcc, mnc=mnc, lac=lac, cid=cid, bounds=bounds)
-    response: any = queryDB(conn,query)
+    response: any = await queryDB(pool,query)
     geoJSON: dict = toGeoJSON(response)
     return {"query": query,
             "response": geoJSON}
@@ -100,5 +100,5 @@ async def response_tiles(table, zoom, x, y,
     Rasterize datapoints into a slippy map.
     TODO: filter based on already set values
     """
-    results: any = generate_tile(table, x, y, zoom, conn, mcc, mnc, lac, cid)
+    results: any = await generate_tile(table, x, y, zoom, pool, mcc, mnc, lac, cid)
     return Response(content=results, media_type="image/png")

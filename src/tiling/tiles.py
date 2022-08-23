@@ -33,7 +33,7 @@ def num2degree(xtile, ytile, zoom) -> tuple:
     lat_degree = math.degrees(lat_radians)
     return (lat_degree, long_degree)
 
-def generate_tile(table, x, y, zoom, conn, mcc, mnc, lac, cid) -> bytearray:
+async def generate_tile(table, x, y, zoom, pool, mcc, mnc, lac, cid) -> bytearray:
     """
     Generate a slippy map tile
     """
@@ -44,7 +44,7 @@ def generate_tile(table, x, y, zoom, conn, mcc, mnc, lac, cid) -> bytearray:
     # Query the database for all points within the tile
     bounds = {"north":north,"south":south, "east":east, "west": west}
     query = create_query("tiles", table,  mcc=mcc, mnc=mnc, lac=lac, cid=cid, bounds=bounds)
-    response = queryDB(conn,query)
+    response = await queryDB(pool,query)
 
     # Put the database response into a pandas dataframe
     # Convert the projection to web-mercator
