@@ -34,5 +34,4 @@ def create_query(type: str, table: str, **kwargs) -> str:
     #TODO: Remove limit for production
     query = query + filter #+ " LIMIT 500"
     query_fill: tuple = (query, tuple(filter_values))
-    print(query_fill)
     return query_fill

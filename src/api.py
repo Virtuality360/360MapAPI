@@ -58,7 +58,7 @@ async def get_count(table: str, north: float = Query(None), south: float = Query
     query: str = create_query("count", table, mcc=mcc, mnc=mnc, lac=lac, cid=cid, bounds=bounds )
     result = await queryDB(pool, query)
 
-    return {"result": result,
+    return {"result": result[0][0],
             "query": query}
 
 @api.get("/filters/{table}")
