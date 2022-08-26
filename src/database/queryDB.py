@@ -11,8 +11,6 @@ async def queryDB(pool, query) -> any:
         print("Error: ", e)
         try:
             pool = establish_connection()
+            await queryDB(pool, query)
         except psycopg.OperationalError:
             print("ERROR: Could not connect to the database server")
-    finally:
-        queryDB(pool, query)
-
