@@ -33,11 +33,11 @@ api.add_middleware(
 )
 
 @api.on_event("startup")
-def startup_event():
+async def startup_event():
     """On the startup of the api, instantiate the connection with the database."""
     global pool
     try:
-        pool = establish_connection()
+        pool = await establish_connection()
     except psycopg.OperationalError:
         print("ERROR: Could not connect to the database server")
 
